@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ruleta de Chupitos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#120E1B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Ruleta de fiesta: gira la flecha y descubre a quién le toca beber.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%83%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#120e1b;
+    --velvet:#211735;
+    --velvet-2:#2c1f45;
+    --neon:#c8ff4d;
+    --coral:#ff5d73;
+    --gold:#d9b25c;
+    --bone:#f3ecdd;
+    --dim:#9a8fb5;
+    --radius:38%;
+  }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+  html,body{height:100%;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(60% 45% at 50% 8%, rgba(200,255,77,0.08), transparent 60%),
+      radial-gradient(80% 60% at 50% 100%, rgba(255,93,115,0.08), transparent 60%),
+      var(--ink);
+    color:var(--bone);
+    font-family:'Manrope',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  }
+
+  .app{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+  }
+
+  .header{ text-align:center; }
+
+  .eyebrow{
+    margin:0 0 6px;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--dim);
+    font-weight:700;
+  }
+
+  .title{
+    margin:0;
+    font-family:'Unbounded',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,7vw,34px);
+    line-height:1.05;
+    letter-spacing:-0.01em;
+  }
+  .title span{ color:var(--neon); }
+
+  /* ---------- WHEEL ---------- */
+
+  .wheel-stage{
+    position:relative;
+    width:min(86vw,380px);
+    aspect-ratio:1/1;
+  }
+
+  .wheel-stage::before{
+    content:"";
+    position:absolute;
+    inset:-10%;
+    background:radial-gradient(circle, rgba(200,255,77,0.10), transparent 65%);
+    filter:blur(4px);
+    pointer-events:none;
+  }
+
+  .wheel{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 42%, var(--velvet-2), var(--velvet) 70%);
+    border:2px solid rgba(217,178,92,0.55);
+    box-shadow:
+      0 0 0 8px rgba(18,14,27,0.9),
+      0 0 0 9px rgba(217,178,92,0.25),
+      inset 0 0 40px rgba(0,0,0,0.45),
+      0 20px 50px rgba(0,0,0,0.55);
+  }
+
+  .slot{
+    position:absolute;
+    top:50%; left:50%;
+    width:64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    transform:translate(-50%,-50%);
+    transition: transform .35s ease, filter .35s ease;
+  }
+
+  .slot .bubble{
+    width:36px; height:36px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--ink);
+    border:1.5px solid rgba(243,236,221,0.25);
+    font-family:'Unbounded',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:var(--bone);
+    transition: background .3s ease, border-color .3s ease, color .3s ease;
+  }
+
+  .slot .name{
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--dim);
+    max-width:64px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:color .3s ease;
+  }
+
+  .slot.winner{ transform:translate(-50%,-50%) scale(1.18); z-index:3; }
+  .slot.winner .bubble{
+    background:var(--coral);
+    border-color:var(--coral);
+    color:var(--ink);
+    box-shadow:0 0 18px rgba(255,93,115,0.75);
+  }
+  .slot.winner .name{ color:var(--bone); }
+
+  .hub{
+    position:absolute;
+    top:50%; left:50%;
+    width:30%; height:30%;
+    transform:translate(-50%,-50%);
+    z-index:2;
+  }
+
+  .hub-plate{
+    position:absolute; inset:-18%;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(18,14,27,0.9), rgba(18,14,27,0.55) 70%, transparent 72%);
+  }
+
+  .glass{ position:absolute; inset:0; }
+
+  .liquid{ transform-origin:50% 78%; }
+  .spinning .liquid{ animation: slosh 0.5s ease-in-out infinite; }
+
+  @keyframes slosh{
+    0%,100%{ transform: rotate(0deg); }
+    50%{ transform: rotate(-4deg); }
+  }
+
+  .needle{
+    position:absolute;
+    bottom:50%; left:50%;
+    width:6px;
+    height:145%;
+    transform-origin:50% 100%;
+    transform:translateX(-50%) rotate(0deg);
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  }
+
+  .needle svg{ position:absolute; bottom:0; left:50%; transform:translateX(-50%); overflow:visible; }
+
+  /* ---------- CONTROLS ---------- */
+
+  .spin-btn{
+    appearance:none; border:none;
+    font-family:'Unbounded',sans-serif;
+    font-weight:800;
+    font-size:16px;
+    letter-spacing:.02em;
+    color:var(--ink);
+    background:var(--neon);
+    padding:16px 46px;
+    border-radius:999px;
+    box-shadow:0 10px 28px rgba(200,255,77,0.25);
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+  }
+  .spin-btn:active{ transform:scale(0.96); }
+  .spin-btn:disabled{ opacity:.55; cursor:default; transform:none; }
+
+  .result{
+    min-height:22px;
+    margin:0;
+    font-weight:800;
+    font-size:16px;
+    color:var(--bone);
+    text-align:center;
+  }
+  .result.show{ color:var(--coral); }
+
+  .edit-toggle{
+    appearance:none;
+    background:transparent;
+    border:1px solid rgba(243,236,221,0.25);
+    color:var(--dim);
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:9px 18px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+
+  .editor{
+    width:100%;
+    background:var(--velvet);
+    border:1px solid rgba(217,178,92,0.2);
+    border-radius:18px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .editor-list{ display:flex; flex-direction:column; gap:8px; }
+
+  .editor-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:rgba(18,14,27,0.5);
+    border-radius:10px;
+    padding:9px 12px;
+  }
+  .editor-row span{ font-weight:700; font-size:14px; }
+
+  .row-remove{
+    appearance:none; border:none; background:transparent;
+    color:var(--dim);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    padding:4px 6px;
+  }
+  .row-remove:hover{ color:var(--coral); }
+
+  .editor-add{ display:flex; gap:8px; margin-top:4px; }
+
+  .editor-add input{
+    flex:1;
+    background:rgba(18,14,27,0.6);
+    border:1px solid rgba(243,236,221,0.18);
+    border-radius:10px;
+    padding:10px 12px;
+    color:var(--bone);
+    font-family:'Manrope',sans-serif;
+    font-weight:600;
+    font-size:14px;
+  }
+  .editor-add input::placeholder{ color:var(--dim); }
+
+  .editor-add button{
+    appearance:none; border:none;
+    background:var(--gold);
+    color:var(--ink);
+    font-weight:800;
+    border-radius:10px;
+    padding:0 16px;
+    cursor:pointer;
+  }
+
+  .editor-hint{ font-size:11px; color:var(--dim); margin:2px 2px 0; }
+
+  :focus-visible{ outline:2px solid var(--neon); outline-offset:3px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .slot, .needle{ transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="header">
+    <p class="eyebrow">Juego de fiesta</p>
+    <h1 class="title">Ruleta de <span>Chupitos</span></h1>
+  </div>
+
+  <div class="wheel-stage">
+    <div class="wheel" id="wheel"></div>
+
+    <div class="hub">
+      <div class="hub-plate"></div>
+
+      <svg class="glass" viewBox="0 0 100 100">
+        <g class="liquid">
+          <path d="M35 55 L65 55 L58 82 Q50 88 42 82 Z" fill="var(--coral)" opacity="0.9"/>
+        </g>
+        <path d="M30 30 L70 30 L60 84 Q50 92 40 84 Z"
+              fill="none" stroke="var(--gold)" stroke-width="3.2"
+              stroke-linejoin="round" stroke-linecap="round"/>
+        <line x1="27" y1="30" x2="73" y2="30" stroke="var(--gold)" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>
+
+      <div class="needle" id="needle">
+        <svg width="14" height="150" viewBox="0 0 14 150">
+          <polygon points="7,0 14,26 9,26 9,150 5,150 5,26 0,26" fill="var(--coral)"/>
+          <circle cx="7" cy="140" r="9" fill="var(--gold)"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">Girar</button>
+
+  <p class="result" id="result" aria-live="polite">Toca girar y que decida la suerte</p>
+
+  <button class="edit-toggle" id="editToggle">Editar jugadores</button>
+
+  <div class="editor" id="editor" hidden>
+    <div class="editor-list" id="editorList"></div>
+    <div class="editor-add">
+      <input id="newPlayerInput" placeholder="Nombre" maxlength="14">
+      <button id="addPlayerBtn">Añadir</button>
+    </div>
+    <p class="editor-hint">Entre 2 y 10 jugadores.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = 'ruleta-chupitos:players';
+  var DEFAULT_PLAYERS = ['Chris','Meli'];
+  var MIN_PLAYERS = 2, MAX_PLAYERS = 10;
+
+  var wheelEl = document.getElementById('wheel');
+  var needleEl = document.getElementById('needle');
+  var glassEl = document.querySelector('.hub');
+  var spinBtn = document.getElementById('spinBtn');
+  var resultEl = document.getElementById('result');
+  var editToggle = document.getElementById('editToggle');
+  var editor = document.getElementById('editor');
+  var editorList = document.getElementById('editorList');
+  var newPlayerInput = document.getElementById('newPlayerInput');
+  var addPlayerBtn = document.getElementById('addPlayerBtn');
+
+  var players = loadPlayers();
+  var currentRotation = 0;
+  var spinning = false;
+  var lastWinner = -1;
+
+  function loadPlayers(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length >= MIN_PLAYERS) return parsed;
+      }
+    }catch(e){}
+    return DEFAULT_PLAYERS.slice();
+  }
+
+  function savePlayers(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }catch(e){}
+  }
+
+  function angleFor(i, n){
+    return (360 / n) * i;
+  }
+
+  function renderWheel(){
+    wheelEl.innerHTML = '';
+    var n = players.length;
+    var R = 38; // percent radius
+    players.forEach(function(name, i){
+      var angle = angleFor(i, n);
+      var rad = (angle - 90) * Math.PI / 180; // -90 so i=0 sits at top
+      var x = 50 + R * Math.cos(rad);
+      var y = 50 + R * Math.sin(rad);
+
+      var slot = document.createElement('div');
+      slot.className = 'slot';
+      slot.style.left = x + '%';
+      slot.style.top = y + '%';
+      slot.dataset.index = i;
+
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = (name.trim()[0] || '?').toUpperCase();
+
+      var label = document.createElement('div');
+      label.className = 'name';
+      label.textContent = name;
+
+      slot.appendChild(bubble);
+      slot.appendChild(label);
+      wheelEl.appendChild(slot);
+    });
+  }
+
+  function renderEditor(){
+    editorList.innerHTML = '';
+    players.forEach(function(name, i){
+      var row = document.createElement('div');
+      row.className = 'editor-row';
+
+      var span = document.createElement('span');
+      span.textContent = name;
+
+      var removeBtn = document.createElement('button');
+      removeBtn.className = 'row-remove';
+      removeBtn.setAttribute('aria-label', 'Quitar ' + name);
+      removeBtn.textContent = '✕';
+      removeBtn.disabled = players.length <= MIN_PLAYERS;
+      removeBtn.addEventListener('click', function(){
+        players.splice(i, 1);
+        savePlayers();
+        renderWheel();
+        renderEditor();
+        resetResult();
+      });
+
+      row.appendChild(span);
+      row.appendChild(removeBtn);
+      editorList.appendChild(row);
+    });
+    addPlayerBtn.disabled = players.length >= MAX_PLAYERS;
+  }
+
+  function resetResult(){
+    resultEl.textContent = 'Toca girar y que decida la suerte';
+    resultEl.classList.remove('show');
+    var winnerSlot = wheelEl.querySelector('.slot.winner');
+    if(winnerSlot) winnerSlot.classList.remove('winner');
+  }
+
+  function vibrate(pattern){
+    try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  }
+
+  function spin(){
+    if(spinning || players.length < MIN_PLAYERS) return;
+    spinning = true;
+    spinBtn.disabled = true;
+    resultEl.classList.remove('show');
+    resultEl.textContent = 'Girando…';
+
+    var winnerSlot = wheelEl.querySelector('.slot.winner');
+    if(winnerSlot) winnerSlot.classList.remove('winner');
+
+    var n = players.length;
+    var targetIndex = Math.floor(Math.random() * n);
+    if(n > 2 && targetIndex === lastWinner){
+      targetIndex = (targetIndex + 1) % n;
+    }
+
+    var arc = 360 / n;
+    var jitter = (Math.random() - 0.5) * arc * 0.6;
+    var targetAngle = angleFor(targetIndex, n) + jitter;
+    var targetMod = ((targetAngle % 360) + 360) % 360;
+
+    var prevMod = ((currentRotation % 360) + 360) % 360;
+    var delta = ((targetMod - prevMod) + 360) % 360;
+    var extraSpins = 5;
+
+    currentRotation = currentRotation + extraSpins * 360 + delta;
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    needleEl.style.transition = reduceMotion
+      ? 'transform .01s linear'
+      : 'transform 3.2s cubic-bezier(0.15, 0.65, 0.15, 1)';
+    needleEl.style.transform = 'translateX(-50%) rotate(' + currentRotation + 'deg)';
+
+    glassEl.classList.add('spinning');
+    vibrate(15);
+
+    var done = false;
+    function finish(){
+      if(done) return;
+      done = true;
+      glassEl.classList.remove('spinning');
+      lastWinner = targetIndex;
+
+      var slot = wheelEl.querySelector('.slot[data-index="' + targetIndex + '"]');
+      if(slot) slot.classList.add('winner');
+
+      resultEl.textContent = '¡' + players[targetIndex] + ' bebe! 🥃';
+      resultEl.classList.add('show');
+      vibrate([30, 60, 30]);
+
+      spinning = false;
+      spinBtn.disabled = false;
+    }
+
+    needleEl.addEventListener('transitionend', finish, { once:true });
+    setTimeout(finish, reduceMotion ? 100 : 3600); // safety fallback
+  }
+
+  spinBtn.addEventListener('click', spin);
+
+  editToggle.addEventListener('click', function(){
+    var isHidden = editor.hasAttribute('hidden');
+    if(isHidden){
+      editor.removeAttribute('hidden');
+      renderEditor();
+      editToggle.textContent = 'Ocultar edición';
+    } else {
+      editor.setAttribute('hidden', '');
+      editToggle.textContent = 'Editar jugadores';
+    }
+  });
+
+  function addPlayer(){
+    var name = newPlayerInput.value.trim();
+    if(!name || players.length >= MAX_PLAYERS) return;
+    players.push(name);
+    savePlayers();
+    newPlayerInput.value = '';
+    renderWheel();
+    renderEditor();
+    resetResult();
+  }
+
+  addPlayerBtn.addEventListener('click', addPlayer);
+  newPlayerInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); addPlayer(); }
+  });
+
+  renderWheel();
+})();
+</script>
+</body>
+</html>
