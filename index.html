@@ -238,6 +238,8 @@
     gap:10px;
   }
 
+  .editor[hidden]{ display:none; }
+
   .editor-list{ display:flex; flex-direction:column; gap:8px; }
 
   .editor-row{
@@ -331,9 +333,8 @@
 
   <button class="spin-btn" id="spinBtn">Girar</button>
 
-  <p class="result" id="result" aria-live="polite">Toca girar y que decida la suerte, </p>
-
-  <button class="edit-toggle" id="editToggle">Editar jugadores</button>
+  <p class="result" id="result" aria-live="polite">Toca girar y que decida la suerte</p>
+  <button class="edit-toggle" id="editToggle">Añadir borracho</button>
 
   <div class="editor" id="editor" hidden>
     <div class="editor-list" id="editorList"></div>
@@ -341,7 +342,7 @@
       <input id="newPlayerInput" placeholder="Nombre" maxlength="14">
       <button id="addPlayerBtn">Añadir</button>
     </div>
-    <p class="editor-hint">Entre 2 y 10 jugadores.</p>
+    <p class="editor-hint">Entre 2 y 10 borrachos!</p>
   </div>
 
 </div>
@@ -349,7 +350,7 @@
 <script>
 (function(){
   var STORAGE_KEY = 'ruleta-chupitos:players';
-  var DEFAULT_PLAYERS = ['Chris','Darwin','Byron','Joni','Andrés','Ligui'];
+  var DEFAULT_PLAYERS = ['Chris','Darwin','Byron','Joni','Andrés','Luigi'];
   var MIN_PLAYERS = 2, MAX_PLAYERS = 10;
 
   var wheelEl = document.getElementById('wheel');
